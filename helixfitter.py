@@ -33,7 +33,7 @@ class HelixFitter:
         
         # generate hits
         self.hits = self.helix_params(self.t_values, d0, phi0, omega, z0, tan_lambda)
-        
+    
     def helix_fitting_func(self, t, d0, phi0, omega, z0, tan_lambda):
         return self.helix_params(t, d0, phi0, omega, z0, tan_lambda).flatten()
 
@@ -71,3 +71,5 @@ if __name__ == "__main__":
         file.write(f'recovered Params {hf.recovered_paramaters()}\n')
         file.write(f'chi squared {hf.chi_squared()}\n')
         file.write("\n")
+    
+    file.close()
