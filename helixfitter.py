@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt    
+import pandas as pd
 
 class HelixFitter:
     """class for generating hits along helical trajectory"""
@@ -60,9 +60,9 @@ class HelixFitter:
         return best_phi
 
     def generate_hits(self):
-        """Generates the hits along helical trajectory."""
-        alpha = np.random.uniform(0.1, 2)
-        kappa = np.random.uniform(0.01, .05)
+        """Generates the hits along the helical trajectory."""
+        alpha = np.random.uniform(1.5, 2)  
+        kappa = np.random.uniform(0.01, 0.02)  
         tan_lambda = np.random.uniform(0.1, 1)
 
         self.original_params = [alpha, kappa, tan_lambda]
@@ -72,8 +72,22 @@ class HelixFitter:
             phi = self.find_phi_for_r(r, alpha, kappa, tan_lambda, max_iter=1000)
             self.phi_values.append(phi)
         self.phi_values = np.array(self.phi_values)
-        self.hits = self.simplified_helix_params(self.phi_values, alpha, kappa, tan_lambda)
+        ideal_hits = self.simplified_helix_params(self.phi_values, alpha, kappa, tan_lambda)
         
+        noisy_hits = []
+        for hit in ideal_hits:
+            x, y, z = hit
+            r = np.sqrt(x**2 + y**2)
+            
+            r_noisy = r + np.random.normal(0, 0.01)
+            
+            scale_factor = r_noisy / r
+            x_noisy = x * scale_factor
+            y_noisy = y * scale_factor
+            
+            noisy_hits.append([x_noisy, y_noisy, z])
+        
+        self.hits = np.array(noisy_hits)
     def simplified_helix_fitting_func(self, phi, alpha, kappa, tan_lambda):
         """Helix fitting function used in curve_fit.
 
@@ -90,23 +104,29 @@ class HelixFitter:
 
     def fit_helix(self):
         """Fits helix to generated hits. Calculates the parameters."""
-        popt, _ = curve_fit(self.simplified_helix_fitting_func, self.phi_values, self.hits.flatten(), p0=self.original_params)
+        #change the initial guess to randomized values
+        init_guess = [np.random.uniform(1.5, 2),
+                      np.random.uniform(0.01,.02),
+                      np.random.uniform(0.1, 1)]
+        
+        popt, _ = curve_fit(self.simplified_helix_fitting_func, self.phi_values, self.hits.flatten(), p0=init_guess, maxfev=100000)
         self.recovered_params = popt
-
-    def calc_chi_squared(self, actual_hits):
-        """Calculates and returns chi squared of the generated hits and actual hits.
-
-        Args:
-            actual_hits (np.array): Array of actual hits.
-
-        Returns:
-            float: Chi-squared value.
-        """
-        residuals = self.hits.flatten() - actual_hits.flatten()
-        self.chi_sq = np.sum((residuals)**2)
+        self.chi_sq = self.calc_chi_squared()
         return self.chi_sq
 
-    def recovered_paramaters(self):
+    def calc_chi_squared(self):
+        """Calculates and returns chi squared of the generated hits and fitted hits at the same radii."""
+        predicted_hits = self.simplified_helix_params(self.phi_values, *self.recovered_params)
+        
+        r_actual = np.sqrt(self.hits[:, 0]**2 + self.hits[:, 1]**2)
+        r_predicted = np.sqrt(predicted_hits[:, 0]**2 + predicted_hits[:, 1]**2)
+        
+        #calc residual between expected r and actual r 
+        residuals = r_actual - r_predicted
+        self.chi_sq = np.sum(residuals**2)
+        return self.chi_sq
+
+    def recovered_parameters(self):
         """Returns recovered parameters.
 
         Returns:
@@ -122,26 +142,46 @@ class HelixFitter:
         """       
         return self.original_params
 
+    def generate_dataset(self, num_samples):
+        """Generates a dataset of hits along the helix trajectory.
+        
+        Returns:
+            Padas dataframe
+        """
+        data = []
+        for _ in range(num_samples):
+            #everytime self.generate_hits is called, a new helix with diffferent random parameters
+            # and hits are created 
+            self.generate_hits()
+            for hit in self.hits:
+                data.append({
+                    'x': hit[0],
+                    'y': hit[1],
+                    'z': hit[2],
+                    'alpha': self.original_params[0],
+                    'kappa': self.original_params[1],
+                    'tan_lambda': self.original_params[2],
+                    'r': np.sqrt(hit[0]**2 + hit[1]**2)
+                })
+        return pd.DataFrame(data)
+
 if __name__ == "__main__":
     file = open("Output.txt", "w")
-   
     hf = HelixFitter()
 
     hf.generate_hits()
-
-    hf.fit_helix()
-    file.write(f'Original Params {hf.og_params()}\n')
-    file.write(f'Recovered Params {hf.recovered_paramaters()}\n')
-    file.write("Generated Hits\n")
+    chi_squared = hf.fit_helix()
+    
+    file.write(f'Original Params: {hf.og_params()}\n')
+    file.write(f'Recovered Params: {hf.recovered_parameters()}\n')
+    file.write(f'Chi-squared: {chi_squared}\n')
+    file.write("Generated Hits:\n")
     
     for i, hit in enumerate(hf.hits):
-        file.write((f"Hit {i} : {hit}\n"))
-        # file.write(f'Phi: {hf.phi_values[i]}\n')
+        file.write(f"Hit {i}: {hit}\n")
         x_squared = hit[0] ** 2
-        y_squared  = hit[1] ** 2
-        z_squared = hit[2] ** 2
-        file.write(f"R: {(x_squared + y_squared) ** .5}\n")
+        y_squared = hit[1] ** 2
+        file.write(f"R: {np.sqrt(x_squared + y_squared)}\n")
 
     file.write("\n")
-    
     file.close()
