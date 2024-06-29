@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.optimize import curve_fit
-import pandas as pd
 
 class HelixFitter:
     """class for generating hits along helical trajectory"""
@@ -142,28 +141,7 @@ class HelixFitter:
         """       
         return self.original_params
 
-    def generate_dataset(self, num_samples):
-        """Generates a dataset of hits along the helix trajectory.
-        
-        Returns:
-            Padas dataframe
-        """
-        data = []
-        for _ in range(num_samples):
-            #everytime self.generate_hits is called, a new helix with diffferent random parameters
-            # and hits are created 
-            self.generate_hits()
-            for hit in self.hits:
-                data.append({
-                    'x': hit[0],
-                    'y': hit[1],
-                    'z': hit[2],
-                    'alpha': self.original_params[0],
-                    'kappa': self.original_params[1],
-                    'tan_lambda': self.original_params[2],
-                    'r': np.sqrt(hit[0]**2 + hit[1]**2)
-                })
-        return pd.DataFrame(data)
+
 
 if __name__ == "__main__":
     file = open("Output.txt", "w")

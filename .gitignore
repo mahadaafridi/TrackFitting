@@ -1,0 +1,6 @@
+myenv/
+notes.txt
+__pycache__/
+*.txt
+!requirements.txt
+*.csv
