@@ -32,5 +32,5 @@ def generate_data(num_helices):
 
 if __name__ == "__main__":
     
-    dataset = generate_data(1000)
+    dataset = generate_data(10000)
     dataset.to_csv("hit_data.csv")

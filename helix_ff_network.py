@@ -48,13 +48,13 @@ def create_ff_model(input_shape, output_shape):
     ])
 
 
+# dataset = pd.read_csv('hit_data_smaller.csv')
 dataset = pd.read_csv('hit_data.csv')
 x, y = prepare_data_for_ml(dataset)
 
 #split into 70% training and 30% testing
 indices = np.arange(len(x))
-X_train, X_test, y_train, y_test, train_indices, test_indices = train_test_split(
-    x, y, indices, test_size=0.3)
+X_train, X_test, y_train, y_test, train_indices, test_indices = train_test_split(x, y, indices, test_size=0.3)
 
 #scale the data
 scaler_X = StandardScaler()
@@ -71,14 +71,11 @@ output_shape = y_train.shape[1]
 model = create_ff_model(input_shape, output_shape)
 model.compile(optimizer='adam', loss='mse')
 
-history = model.fit(X_train_scaled, y_train_scaled, 
-                    epochs=100, 
-                    batch_size=32, 
-                    validation_split=0.2,
-                    verbose=0)
+history = model.fit(X_train_scaled, y_train_scaled, epochs=100, batch_size=32, validation_split=0.2)
 
 #predict params
 predicted_params_scaled = model.predict(X_test_scaled)
+#puts it back into its original scale for better comparison and understanding 
 predicted_params = scaler_y.inverse_transform(predicted_params_scaled)
 
 #this gets the helix ids of the test dataset 
@@ -89,9 +86,9 @@ rows_in_dataset = [x * 10 for x in test_helix_ids]
 test_helix_data = dataset.iloc[rows_in_dataset]
 
 # MSE comparison 
-true_params = test_helix_data[['true_alpha', 'true_kappa', 'true_tan_lambda']].to_numpy()
+true_params = test_helix_data[['true_alpha', 'true_kappa', 'true_tan_lambda']].to_numpy() 
 curve_fit_params = test_helix_data[['curve_fit_alpha', 'curve_fit_kappa', 'curve_fit_tan_lambda']].to_numpy()
-ml_params = predicted_params
+ml_params = predicted_params 
 
 # print("true")
 # print(true_params)
@@ -102,6 +99,12 @@ ml_params = predicted_params
 
 mse_curve_fit = mean_squared_error(true_params, curve_fit_params)
 mse_ml_model = mean_squared_error(true_params, ml_params)
+
+file = open("mse_predictons.txt", 'w')
+file.write(f"curve fit MSE: {mse_curve_fit}\n")
+file.write(f"ml MSE: {mse_ml_model}")
+file.close()
+
 
 print(f"curve fit MSE: {mse_curve_fit}")
 print(f"ml MSE: {mse_ml_model}")

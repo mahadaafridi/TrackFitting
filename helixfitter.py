@@ -108,7 +108,10 @@ class HelixFitter:
                       np.random.uniform(0.01,.02),
                       np.random.uniform(0.1, 1)]
         
-        popt, _ = curve_fit(self.simplified_helix_fitting_func, self.phi_values, self.hits.flatten(), p0=init_guess, maxfev=100000)
+        #boundaries 
+        lower_bounds = [1.5, 0.01, 0.1]
+        upper_bounds = [2.0, 0.02, 1.0]
+        popt, _ = curve_fit(self.simplified_helix_fitting_func, self.phi_values, self.hits.flatten(), p0=init_guess, bounds=(lower_bounds, upper_bounds) ,maxfev=100000)
         self.recovered_params = popt
         self.chi_sq = self.calc_chi_squared()
         return self.chi_sq
