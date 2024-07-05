@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -86,25 +88,89 @@ rows_in_dataset = [x * 10 for x in test_helix_ids]
 test_helix_data = dataset.iloc[rows_in_dataset]
 
 # MSE comparison 
-true_params = test_helix_data[['true_alpha', 'true_kappa', 'true_tan_lambda']].to_numpy() 
-curve_fit_params = test_helix_data[['curve_fit_alpha', 'curve_fit_kappa', 'curve_fit_tan_lambda']].to_numpy()
-ml_params = predicted_params 
+# true_params = test_helix_data[['true_alpha', 'true_kappa', 'true_tan_lambda']].to_numpy() 
+# curve_fit_params = test_helix_data[['curve_fit_alpha', 'curve_fit_kappa', 'curve_fit_tan_lambda']].to_numpy()
+# ml_params = predicted_params 
 
-# print("true")
-# print(true_params)
-# print("curve")
-# print(curve_fit_params)
-# print("ml")
-# print(ml_params)
+true_alpha = test_helix_data['true_alpha'].to_numpy() 
+true_kappa = test_helix_data['true_kappa'].to_numpy() 
+true_tan_lambda = test_helix_data['true_tan_lambda'].to_numpy() 
 
-mse_curve_fit = mean_squared_error(true_params, curve_fit_params)
-mse_ml_model = mean_squared_error(true_params, ml_params)
+curve_fit_alpha = test_helix_data['curve_fit_alpha'].to_numpy() 
+curve_fit_kappa = test_helix_data['curve_fit_kappa'].to_numpy() 
+curve_fit_tan_lambda = test_helix_data['curve_fit_tan_lambda'].to_numpy() 
 
-file = open("mse_predictons.txt", 'w')
-file.write(f"curve fit MSE: {mse_curve_fit}\n")
-file.write(f"ml MSE: {mse_ml_model}")
-file.close()
+ml_alpha = predicted_params[:, 0]
+ml_kappa = predicted_params[:, 1]
+ml_tan_lambda = predicted_params[:, 2]
+
+#calculate residuals for curve
+residual_curve_fit_alpha = true_alpha - curve_fit_alpha
+residual_curve_fit_kappa = true_kappa - curve_fit_kappa
+residual_curve_fit_tan_lambda = true_tan_lambda - curve_fit_tan_lambda
+
+#calculate residuals for ml predicted
+residual_ml_alpha = true_alpha - ml_alpha
+residual_ml_kappa = true_kappa - ml_kappa
+residual_ml_tan_lambda = true_tan_lambda - ml_tan_lambda
+
+mse_curve_fit_alpha = mean_squared_error(true_alpha, curve_fit_alpha)
+mse_curve_fit_kappa = mean_squared_error(true_kappa, curve_fit_kappa)
+mse_curve_fit_tan_lambda = mean_squared_error(true_tan_lambda, curve_fit_tan_lambda)
+
+mse_ml_alpha = mean_squared_error(true_alpha, ml_alpha)
+mse_ml_kappa = mean_squared_error(true_kappa, ml_kappa)
+mse_ml_tan_lambda = mean_squared_error(true_tan_lambda, ml_tan_lambda)
+
+mse_content = f"""
+MSE for Curve-Fit Alpha: {mse_curve_fit_alpha}
+MSE for Curve-Fit Kappa: {mse_curve_fit_kappa}
+MSE for Curve-Fit Tan Lambda: {mse_curve_fit_tan_lambda}
+
+MSE for ML Alpha: {mse_ml_alpha}
+MSE for ML Kappa: {mse_ml_kappa}
+MSE for ML Tan Lambda: {mse_ml_tan_lambda}
+"""
+
+with open("mse_predictions.txt", "w") as file:
+    file.write(mse_content)
+
+# file = open("mse_predictons.txt", 'w')
+# file.write(f"curve fit MSE: {mse_curve_fit}\n")
+# file.write(f"ml MSE: {mse_ml_model}")
+# file.close()
 
 
-print(f"curve fit MSE: {mse_curve_fit}")
-print(f"ml MSE: {mse_ml_model}")
+# print(f"curve fit MSE: {mse_curve_fit}")
+# print(f"ml MSE: {mse_ml_model}")
+
+
+
+
+
+
+fig, axes = plt.subplots(3, 2, figsize=(14, 12))
+
+sns.histplot(residual_curve_fit_alpha, kde=True, ax=axes[0, 0], color='green', label='Curve-Fit Residuals', alpha=0.6)
+sns.histplot(residual_ml_alpha, kde=True, ax=axes[0, 1], color='red', label='ML Residuals', alpha=0.6)
+axes[0, 0].legend()
+axes[0, 1].legend()
+axes[0, 0].set_title('Alpha: True - Curve-Fit')
+axes[0, 1].set_title('alpha: True - ML')
+
+sns.histplot(residual_curve_fit_kappa, kde=True, ax=axes[1, 0], color='green', label='Curve-Fit Residuals', alpha=0.6)
+sns.histplot(residual_ml_kappa, kde=True, ax=axes[1, 1], color='red', label='ML Residuals', alpha=0.6)
+axes[1, 0].legend()
+axes[1, 1].legend()
+axes[1, 0].set_title('kappa: True - Curve-Fit')
+axes[1, 1].set_title('kappa: True - ML')
+
+sns.histplot(residual_curve_fit_tan_lambda, kde=True, ax=axes[2, 0], color='green', label='Curve-Fit Residuals', alpha=0.6)
+sns.histplot(residual_ml_tan_lambda, kde=True, ax=axes[2, 1], color='red', label='ML Residuals', alpha=0.6)
+axes[2, 0].legend()
+axes[2, 1].legend()
+axes[2, 0].set_title('tan lambda: True - Curve-Fit')
+axes[2, 1].set_title('tan lambda: True - ML')
+
+plt.tight_layout()
+plt.show()
