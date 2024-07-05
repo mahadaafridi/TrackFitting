@@ -2,7 +2,7 @@ myenv/
 env/
 notes.txt
 __pycache__/
-*.txt
+# *.txt
 !requirements.txt
 *.csv
 settings.json
