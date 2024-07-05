@@ -1,2 +1,14 @@
 curve fit MSE: 0.00954698795647956
 ml MSE: 0.005720459633878627
+
+
+
+Hi,
+
+This sounds excellent.
+
+I don’t see any issues, just a couple of details:
+
+1) Let’s compare the residuals for each parameter individually. The MSE is fine, but I’d like to see the true-estimated distributions for each of the 5 helix parameters.
+
+2) I don’t understand why you need to generate hits from the NN predictions — I think you mean: find the locations along the NN track parameters that intersect circles at the same radii as the hits, and calculate the distances between those impact predictions and the observed hits. Is that right?
