@@ -127,7 +127,17 @@ class HelixFitter:
         residuals = r_actual - r_predicted
         self.chi_sq = np.sum(residuals**2)
         return self.chi_sq
-
+    
+    def generate_helix_hits(self, alpha, kappa, tan_lambda):
+        """Generate hits at specific radii for given alpha, kappa, tan_lambda. This will be used for the ML track generation"""
+        radii = np.linspace(1, 10, 10)
+        self.phi_values = []
+        for r in radii:
+            phi = self.find_phi_for_r(r, alpha, kappa, tan_lambda, max_iter=1000)
+            self.phi_values.append(phi)
+        self.phi_values = np.array(self.phi_values)
+        ideal_hits = self.simplified_helix_params(self.phi_values, alpha, kappa, tan_lambda)
+        return ideal_hits
     def recovered_parameters(self):
         """Returns recovered parameters.
 

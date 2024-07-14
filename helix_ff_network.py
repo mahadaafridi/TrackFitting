@@ -42,6 +42,14 @@ def create_ff_model(input_shape, output_shape):
     Returns:
         _type_: tf.keras.Sequential
     """
+    #lower and upper bounds as the curve fit was also given this 
+    lower_bounds = [1.5, 0.01, 0.1]  
+    upper_bounds = [2.0, 0.02, 1.0]  
+    
+    constraints = []
+    for lower, upper in zip(lower_bounds, upper_bounds):
+        constraints.append(tf.keras.constraints.MinMaxNorm(min_value=lower, max_value=upper))
+
     return tf.keras.Sequential([
         tf.keras.layers.Dense(64, activation='relu', input_shape=(input_shape,)),
         tf.keras.layers.Dense(32, activation='relu'),
@@ -100,9 +108,60 @@ curve_fit_alpha = test_helix_data['curve_fit_alpha'].to_numpy()
 curve_fit_kappa = test_helix_data['curve_fit_kappa'].to_numpy() 
 curve_fit_tan_lambda = test_helix_data['curve_fit_tan_lambda'].to_numpy() 
 
+
+
 ml_alpha = predicted_params[:, 0]
 ml_kappa = predicted_params[:, 1]
 ml_tan_lambda = predicted_params[:, 2]
+
+def get_rows_from_indices(df, indices, range_size=10):
+    result = []
+    for index in indices:
+        result.append(df.iloc[index:index + range_size])
+    return result
+
+extracted_rows = get_rows_from_indices(dataset, rows_in_dataset)
+curve_fit_chi_sq = test_helix_data['curve_fit_chi_sq'].to_numpy()
+
+#generates hits from the ml parameter predictions 
+ml_chi_squared = []
+for i, param in enumerate(predicted_params):
+    alpha, kappa, tan_lambda = param 
+
+    hf_ml = HelixFitter()
+    #pass in parameters to function to generate hits from it
+    ml_track_hits = hf_ml.generate_helix_hits(alpha, kappa, tan_lambda)
+
+    r_predicted = np.sqrt(ml_track_hits[:, 0]**2 + ml_track_hits[:, 1]**2)
+    r_actual = extracted_rows[i]['r']
+
+    residuals = r_actual - r_predicted
+    chi_squared = np.sum(residuals**2)
+
+    ml_chi_squared.append(chi_squared)
+
+
+
+
+#convert to numpy array
+curve_fit_chi_sq = np.array(curve_fit_chi_sq)
+ml_chi_squared = np.array(ml_chi_squared)
+
+curve_fit_mean = np.mean(curve_fit_chi_sq)
+ml_mean = np.mean(ml_chi_squared)
+
+curve_fit_std = np.std(curve_fit_chi_sq)
+ml_std = np.std(ml_chi_squared)
+
+#for output file 
+chi_squared_stats = f"""
+Curve Fit Chi-Squared Values:
+Mean: {curve_fit_mean}, Standard Deviation: {curve_fit_std}
+
+ML Model Chi-Squared Values:
+Mean: {ml_mean}, Standard Deviation: {ml_std}\n
+"""
+
 
 #calculate residuals for curve
 residual_curve_fit_alpha = true_alpha - curve_fit_alpha
@@ -132,20 +191,9 @@ MSE for ML Kappa: {mse_ml_kappa}
 MSE for ML Tan Lambda: {mse_ml_tan_lambda}
 """
 
-with open("mse_predictions.txt", "w") as file:
+with open("ml_statistics.txt", "w") as file:
+    file.write(chi_squared_stats)
     file.write(mse_content)
-
-# file = open("mse_predictons.txt", 'w')
-# file.write(f"curve fit MSE: {mse_curve_fit}\n")
-# file.write(f"ml MSE: {mse_ml_model}")
-# file.close()
-
-
-# print(f"curve fit MSE: {mse_curve_fit}")
-# print(f"ml MSE: {mse_ml_model}")
-
-
-
 
 
 
