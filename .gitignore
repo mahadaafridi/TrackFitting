@@ -2,6 +2,7 @@ myenv/
 env/
 notes.txt
 __pycache__/
+logs/
 # *.txt
 !requirements.txt
 *.csv
