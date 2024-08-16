@@ -1,4 +1,6 @@
-import ast
+import logging
+import os
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +12,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from helixfitter import HelixFitter
+
+# Logging directory
+LOGS_DIR = "logs"
+
+# Logging settings section
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    filename=os.path.join(LOGS_DIR, f"logfile_{datetime.now()}.txt"),
+    encoding="utf-8",
+    filemode="w",
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
 
 
 def prepare_data_for_ml(dataset):
@@ -68,8 +83,49 @@ def create_ff_model(input_shape, output_shape):
     )
 
 
+def plot_chi_squared(curve_fit_chi_sq, ml_chi_squared):
+    """Plots the chi squared of the ml and curve fit models"""
+    plt.figure(figsize=(10, 6))
+
+    min_bin = min(curve_fit_chi_sq.min(), ml_chi_squared.min())
+    max_bin = max(curve_fit_chi_sq.max(), ml_chi_squared.max())
+
+    bins = np.logspace(np.log10(min_bin), np.log10(max_bin), 20)
+
+    plt.hist(
+        curve_fit_chi_sq,
+        bins=bins,
+        alpha=0.5,
+        label="Curve Fit Chi-Squared",
+        color="blue",
+    )
+    plt.hist(
+        ml_chi_squared,
+        bins=bins,
+        alpha=0.5,
+        label="ML Model Chi-Squared",
+        color="orange",
+    )
+
+    plt.xscale("log")
+    plt.xlabel("Chi-Squared Values (Log Scale)")
+    plt.ylabel("Frequency")
+    plt.title("Comparison of Chi-Squared Values")
+    plt.legend(loc="upper right")
+    plt.grid(True)
+    plt.show()
+
+
+def get_rows_from_indices(df, indices, range_size=10):
+    result = []
+    for index in indices:
+        result.append(df.iloc[index : index + range_size])
+    return result
+
+
 # dataset = pd.read_csv('hit_data_smaller.csv')
 dataset = pd.read_csv("hit_data.csv")
+# dataset = pd.read_csv("test_hit_data.csv")
 x, y = prepare_data_for_ml(dataset)
 
 # split into 70% training and 30% testing
@@ -109,10 +165,6 @@ test_helix_ids = dataset["helix_id"].unique()[test_indices]
 rows_in_dataset = [x * 10 for x in test_helix_ids]
 test_helix_data = dataset.iloc[rows_in_dataset]
 
-# MSE comparison
-# true_params = test_helix_data[['true_alpha', 'true_kappa', 'true_tan_lambda']].to_numpy()
-# curve_fit_params = test_helix_data[['curve_fit_alpha', 'curve_fit_kappa', 'curve_fit_tan_lambda']].to_numpy()
-# ml_params = predicted_params
 
 true_alpha = test_helix_data["true_alpha"].to_numpy()
 true_kappa = test_helix_data["true_kappa"].to_numpy()
@@ -126,13 +178,6 @@ curve_fit_tan_lambda = test_helix_data["curve_fit_tan_lambda"].to_numpy()
 ml_alpha = predicted_params[:, 0]
 ml_kappa = predicted_params[:, 1]
 ml_tan_lambda = predicted_params[:, 2]
-
-
-def get_rows_from_indices(df, indices, range_size=10):
-    result = []
-    for index in indices:
-        result.append(df.iloc[index : index + range_size])
-    return result
 
 
 extracted_rows = get_rows_from_indices(dataset, rows_in_dataset)
@@ -204,11 +249,14 @@ MSE for ML Kappa: {mse_ml_kappa}
 MSE for ML Tan Lambda: {mse_ml_tan_lambda}
 """
 
-with open("ml_statistics.txt", "w") as file:
+with open("individual_scaling_stats.txt", "w") as file:
     file.write(chi_squared_stats)
     file.write(mse_content)
 
+# plot the chi squared
+plot_chi_squared(curve_fit_chi_sq, ml_chi_squared)
 
+# plotting the residuals
 fig, axes = plt.subplots(3, 2, figsize=(14, 12))
 
 sns.histplot(
