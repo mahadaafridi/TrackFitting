@@ -136,27 +136,61 @@ X_train, X_test, y_train, y_test, train_indices, test_indices = train_test_split
 
 # scale the data
 scaler_X = StandardScaler()
-scaler_y = StandardScaler()
 
+# Separate scalers for each target variable y (alpha, kappa, tan_lambda)
+scaler_alpha = StandardScaler()
+scaler_kappa = StandardScaler()
+scaler_tan_lambda = StandardScaler()
+
+# Scale the input features
 X_train_scaled = scaler_X.fit_transform(X_train)
 X_test_scaled = scaler_X.transform(X_test)
-y_train_scaled = scaler_y.fit_transform(y_train)
-y_test_scaled = scaler_y.transform(y_test)
 
-# create ff model
-input_shape = X_train.shape[1]
-output_shape = y_train.shape[1]
-model = create_ff_model(input_shape, output_shape)
+# Scale the target variables separately
+y_train_alpha_scaled = scaler_alpha.fit_transform(y_train[:, 0].reshape(-1, 1))
+y_train_kappa_scaled = scaler_kappa.fit_transform(y_train[:, 1].reshape(-1, 1))
+y_train_tan_lambda_scaled = scaler_tan_lambda.fit_transform(
+    y_train[:, 2].reshape(-1, 1)
+)
+
+y_test_alpha_scaled = scaler_alpha.transform(y_test[:, 0].reshape(-1, 1))
+y_test_kappa_scaled = scaler_kappa.transform(y_test[:, 1].reshape(-1, 1))
+y_test_tan_lambda_scaled = scaler_tan_lambda.transform(y_test[:, 2].reshape(-1, 1))
+
+# Combine the scaled target variables back into a single array
+y_train_scaled = np.hstack(
+    [y_train_alpha_scaled, y_train_kappa_scaled, y_train_tan_lambda_scaled]
+)
+y_test_scaled = np.hstack(
+    [y_test_alpha_scaled, y_test_kappa_scaled, y_test_tan_lambda_scaled]
+)
+
+# Create and train the model as before
+model = create_ff_model(
+    input_shape=X_train_scaled.shape[1], output_shape=y_train_scaled.shape[1]
+)
 model.compile(optimizer="adam", loss="mse")
 
 history = model.fit(
     X_train_scaled, y_train_scaled, epochs=100, batch_size=32, validation_split=0.2
 )
 
-# predict params
+# Predict and inverse transform
 predicted_params_scaled = model.predict(X_test_scaled)
-# puts it back into its original scale for better comparison and understanding
-predicted_params = scaler_y.inverse_transform(predicted_params_scaled)
+
+# Inverse transform each of the predicted parameters
+predicted_alpha = scaler_alpha.inverse_transform(
+    predicted_params_scaled[:, 0].reshape(-1, 1)
+).flatten()
+predicted_kappa = scaler_kappa.inverse_transform(
+    predicted_params_scaled[:, 1].reshape(-1, 1)
+).flatten()
+predicted_tan_lambda = scaler_tan_lambda.inverse_transform(
+    predicted_params_scaled[:, 2].reshape(-1, 1)
+).flatten()
+
+# Combine the inverse transformed predictions back into a single array for analysis
+predicted_params = np.vstack([predicted_alpha, predicted_kappa, predicted_tan_lambda]).T
 
 # this gets the helix ids of the test dataset
 test_helix_ids = dataset["helix_id"].unique()[test_indices]
@@ -249,7 +283,7 @@ MSE for ML Kappa: {mse_ml_kappa}
 MSE for ML Tan Lambda: {mse_ml_tan_lambda}
 """
 
-with open("individual_scaling_stats.txt", "w") as file:
+with open("ml_satistics.txt", "w") as file:
     file.write(chi_squared_stats)
     file.write(mse_content)
 
