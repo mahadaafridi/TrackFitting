@@ -1,0 +1,15 @@
+
+Curve Fit Chi-Squared Values:
+Mean: 0.0009007551010218556, Standard Deviation: 0.00042759527966739066
+
+ML Model Chi-Squared Values:
+Mean: 0.5111063782863756, Standard Deviation: 0.7623036920252645
+
+
+MSE for Curve-Fit Alpha: 0.029057247456825176
+MSE for Curve-Fit Kappa: 2.1704324169551663e-06
+MSE for Curve-Fit Tan Lambda: 1.0070764129499112e-07
+
+MSE for ML Alpha: 0.016655300286315178
+MSE for ML Kappa: 1.243431826343135e-06
+MSE for ML Tan Lambda: 0.0005349119529737476
