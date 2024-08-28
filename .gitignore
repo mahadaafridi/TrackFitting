@@ -5,5 +5,4 @@ __pycache__/
 logs/
 # *.txt
 !requirements.txt
-*.csv
 settings.json
